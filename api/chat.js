@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
   const systemPrompts = {
     code: "You are a senior software engineer. Output ONLY clean, working code. No explanations.",
-    website: "You are a website builder AI. Generate full HTML, CSS, JS websites. No explanations.",
+    websitee: "You are a website builder AI. Generate full HTML, CSS, JS websites. No explanations.",
     scratch: "You are Scratch Buddy. Output ONLY Scratch 3.0 block-style instructions.",
     chat: "You are a helpful chat assistant. Be friendly, short, and clear. Do not output code unless asked.",
     game: "You are a game developer. Output complete working game code. No explanations."
