@@ -172,6 +172,7 @@
             box-shadow: 0 4px 14px 0 rgba(77, 151, 255, 0.39);
         }
         .btn-primary:hover { background-color: var(--accent-hover); transform: translateY(-1px); }
+        .btn-primary:disabled { background-color: var(--text-muted); cursor: not-allowed; transform: none; }
 
         .btn-secondary {
             background-color: transparent;
@@ -288,6 +289,7 @@
             border-radius: 12px;
             font-size: 0.95rem;
             line-height: 1.5;
+            white-space: pre-wrap; /* Preserve formatting */
         }
 
         .msg-user {
@@ -580,7 +582,7 @@ data: [DONE]
                 </div>
 <pre>
 <span class="syntax-key">async function</span> streamChat() {
-  <span class="syntax-key">const</span> response = <span class="syntax-key">await</span> fetch(<span class="syntax-str">'/api/chat'</span>, {
+  <span class="syntax-key">const</span> response = <span class="syntax-key">await</span> fetch(<span class="syntax-str">'http://aibuilder.eu.cc/api/chat'</span>, {
     method: <span class="syntax-str">'POST'</span>,
     headers: { <span class="syntax-str">'Content-Type'</span>: <span class="syntax-str">'application/json'</span> },
     body: JSON.stringify({
@@ -686,7 +688,7 @@ data: [DONE]
 
                 <div class="pg-input-area">
                     <input type="text" id="pg-input" class="pg-input" placeholder="Type a message..." onkeypress="handleEnter(event)">
-                    <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                    <button id="pg-send-btn" class="btn btn-primary" onclick="sendMessage()">Send</button>
                 </div>
             </div>
         </section>
@@ -705,7 +707,7 @@ data: [DONE]
   model: <span class="syntax-str">"z-ai/glm4.7"</span>,
   messages: history
 };
-fetch(<span class="syntax-str">'/api/chat'</span>, {
+fetch(<span class="syntax-str">'http://aibuilder.eu.cc/api/chat'</span>, {
   method: <span class="syntax-str">'POST'</span>,
   body: JSON.stringify(data)
 }).then(res => res.json());
@@ -768,14 +770,10 @@ fetch(<span class="syntax-str">'/api/chat'</span>, {
     <script>
         // --- Navigation Logic ---
         function showSection(id) {
-            // Hide all sections
             document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
-            // Show target section
             document.getElementById(id).classList.add('active');
             
-            // Update sidebar active state
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            // Find the link that calls this function (rough approximation for simplicity)
             const links = document.querySelectorAll('.nav-link');
             links.forEach(link => {
                 if(link.getAttribute('onclick').includes(id)) {
@@ -783,7 +781,6 @@ fetch(<span class="syntax-str">'/api/chat'</span>, {
                 }
             });
 
-            // Close mobile sidebar if open
             if(window.innerWidth <= 768) {
                 document.getElementById('sidebar').classList.remove('open');
             }
@@ -800,7 +797,6 @@ fetch(<span class="syntax-str">'/api/chat'</span>, {
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
         }
 
-        // Load saved theme
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark');
         }
@@ -815,11 +811,15 @@ fetch(<span class="syntax-str">'/api/chat'</span>, {
             });
         }
 
-        // --- Playground Logic (Simulated API) ---
+        // --- Playground Logic (Real API) ---
         const outputDiv = document.getElementById('pg-output');
         const inputField = document.getElementById('pg-input');
         const modeSelect = document.getElementById('pg-mode');
         const streamToggle = document.getElementById('pg-stream');
+        const sendBtn = document.getElementById('pg-send-btn');
+
+        // Store conversation history
+        let chatHistory = [];
 
         function handleEnter(e) {
             if (e.key === 'Enter') sendMessage();
@@ -827,12 +827,13 @@ fetch(<span class="syntax-str">'/api/chat'</span>, {
 
         function clearChat() {
             outputDiv.innerHTML = '<div class="message msg-ai">Chat cleared. Ready for new input.</div>';
+            chatHistory = [];
         }
 
         function appendMessage(role, text) {
             const div = document.createElement('div');
             div.className = `message msg-${role}`;
-            div.innerText = text; // Use innerText to prevent XSS in this demo
+            div.innerText = text;
             outputDiv.appendChild(div);
             outputDiv.scrollTop = outputDiv.scrollHeight;
             return div;
@@ -842,57 +843,87 @@ fetch(<span class="syntax-str">'/api/chat'</span>, {
             const text = inputField.value.trim();
             if (!text) return;
 
-            // 1. Add User Message
+            // 1. Add User Message to UI and History
             appendMessage('user', text);
+            chatHistory.push({ role: "user", content: text });
             inputField.value = '';
+            
+            // Disable input while generating
+            inputField.disabled = true;
+            sendBtn.disabled = true;
 
             // 2. Prepare AI Placeholder
             const aiMsgDiv = appendMessage('ai', 'Thinking...');
             const mode = modeSelect.value;
             const isStream = streamToggle.checked;
 
-            // 3. Simulate API Call
             try {
-                // Simulate network delay
-                await new Promise(r => setTimeout(r, 600));
+                const response = await fetch('http://aibuilder.eu.cc/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: "z-ai/glm4.7",
+                        messages: chatHistory,
+                        stream: isStream,
+                        mode: mode
+                    })
+                });
 
-                // Generate mock response based on mode
-                let fullResponse = generateMockResponse(text, mode);
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
 
                 if (isStream) {
-                    // Streaming Simulation
-                    aiMsgDiv.innerText = '';
-                    const words = fullResponse.split(' ');
-                    
-                    for (let i = 0; i < words.length; i++) {
-                        aiMsgDiv.innerText += (i > 0 ? ' ' : '') + words[i];
-                        outputDiv.scrollTop = outputDiv.scrollHeight;
-                        // Random typing speed between 30ms and 100ms
-                        await new Promise(r => setTimeout(r, Math.random() * 70 + 30));
-                    }
-                } else {
-                    // Non-streaming
-                    aiMsgDiv.innerText = fullResponse;
-                }
-            } catch (err) {
-                aiMsgDiv.innerText = "Error: Could not connect to AI API.";
-            }
-        }
+                    // --- Streaming Handling ---
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let fullText = "";
+                    aiMsgDiv.innerText = ""; // Clear "Thinking..."
 
-        function generateMockResponse(input, mode) {
-            const base = `You said: "${input}". `;
-            
-            switch(mode) {
-                case 'code':
-                    return `Here is a code example based on your request:\n\n\`\`\`javascript\nconsole.log("${input}");\nfunction process() { return true; }\n\`\`\`\nLet me know if you need more help.`;
-                case 'reasoning':
-                    return `Thinking process:\n1. Analyzed input: "${input}"\n2. Identified intent: General inquiry\n3. Formulated response strategy.\n\nFinal Answer: I can certainly help with that! Here is the information you requested.`;
-                case 'scratch':
-                    return `<xml><block type="motion_movesteps"><value name="STEPS"><shadow type="math_number"><field name="NUM">10</field></shadow></value></block><block type="looks_say"><value name="MESSAGE"><shadow type="text"><field name="TEXT">${input}</field></shadow></value></block></xml>`;
-                case 'docs':
-                    return `# Documentation Reference\n\n## Overview\nThis section addresses: ${input}.\n\n### Parameters\n- Input: User provided string\n- Output: Structured data\n\nSee API Reference for more details.`;
-                default: // chat
-                    return base + "That's interesting! I am running in 'Chat' mode. How can I assist you further today?";
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split('\n');
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const jsonStr = line.slice(6);
+                                if (jsonStr.trim() === '[DONE]') break;
+                                
+                                try {
+                                    const json = JSON.parse(jsonStr);
+                                    const content = json.choices[0].delta.content;
+                                    if (content) {
+                                        fullText += content;
+                                        aiMsgDiv.innerText = fullText;
+                                        outputDiv.scrollTop = outputDiv.scrollHeight;
+                                    }
+                                } catch (e) {
+                                    console.error("Error parsing stream chunk", e);
+                                }
+                            }
+                        }
+                    }
+                    // Add final response to history
+                    chatHistory.push({ role: "assistant", content: fullText });
+
+                } else {
+                    // --- Non-Streaming Handling ---
+                    const data = await response.json();
+                    const content = data.choices[0].message.content;
+                    aiMsgDiv.innerText = content;
+                    chatHistory.push({ role: "assistant", content: content });
+                }
+
+            } catch (err) {
+                aiMsgDiv.innerText = "Error: " + err.message + ". Please check your connection.";
+                console.error(err);
+            } finally {
+                inputField.disabled = false;
+                sendBtn.disabled = false;
+                inputField.focus();
             }
         }
     </script>
