@@ -7,6 +7,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Marked.js for Markdown Parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
     <style>
         :root {
             --bg-body: #09090b;
@@ -140,12 +147,16 @@
             color: var(--text-main);
             border-bottom-left-radius: 4px;
             border: 1px solid var(--border-color);
-            white-space: pre-wrap;
         }
 
+        /* Markdown Styles within AI messages */
+        .ai p { margin: 0 0 1em 0; }
+        .ai p:last-child { margin-bottom: 0; }
         .ai strong { color: #fff; font-weight: 600; }
+        .ai a { color: var(--primary); text-decoration: none; }
+        .ai a:hover { text-decoration: underline; }
         
-        .ai code { 
+        .ai code:not(pre code) { 
             background: rgba(0,0,0,0.4); 
             padding: 2px 6px; 
             border-radius: 6px; 
@@ -162,13 +173,15 @@
             overflow-x: auto;
             border: 1px solid var(--border-color);
             margin: 0.5rem 0;
+            position: relative;
         }
         
         .ai pre code {
             background: transparent;
             padding: 0;
             border: none;
-            color: #a1a1aa;
+            color: inherit; /* Allows highlight.js colors to show */
+            font-family: var(--font-mono);
         }
 
         /* Input Area */
@@ -209,7 +222,7 @@
             border-radius: 8px;
             font-size: 1rem;
             resize: none;
-            height: 52px; /* Initial height */
+            height: 52px;
             max-height: 200px;
             font-family: var(--font-sans);
             line-height: 1.5;
@@ -283,12 +296,11 @@
             #chat { padding: 1rem; gap: 1.5rem; }
             .input-container { padding: 1rem; }
             .msg { max-width: 95%; }
-            .brand span { display: none; } /* Hide text on very small screens if needed, or keep */
+            .brand span { display: none; }
             .brand svg { display: block; }
         }
     </style>
 </head>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <body>
 
 <header>
@@ -309,7 +321,7 @@
 
 <div id="chat">
     <div class="msg ai">
-        Hello! I'm your AI Builder. Select a mode above and describe what you want to build.
+        Hello! I'm your AI Builder. Select a mode above and describe what you want to build..
     </div>
 </div>
 
@@ -323,6 +335,16 @@
 </div>
 
 <script>
+    // Configure Marked.js with Highlight.js
+    marked.setOptions({
+        highlight: function(code, lang) {
+            const language = highlight.getLanguage(lang) ? lang : 'plaintext';
+            return highlight.highlight(code, { language }).value;
+        },
+        langPrefix: 'hljs language-',
+        breaks: true // Convert \n to <br>
+    });
+
     const chat = document.getElementById("chat");
     const input = document.getElementById("input");
     const sendBtn = document.getElementById("send-btn");
@@ -349,9 +371,8 @@
         if (text === "") {
             div.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
         } else {
-            // Basic formatting for code blocks if the AI sends them
-            // Note: This is a visual enhancement, logic remains text-based
-            div.textContent = text;
+            // Parse markdown for initial messages (like the welcome message)
+            div.innerHTML = marked.parse(text);
         }
         
         chat.appendChild(div);
@@ -368,13 +389,14 @@
         // UI Updates
         add(text, "user");
         input.value = "";
-        input.style.height = "52px"; // Reset height
+        input.style.height = "52px";
         sendBtn.disabled = true;
         
         // Change icon to loading spinner
         sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>';
 
         const aiBox = add("", "ai");
+        let fullResponse = ""; // Buffer to accumulate the full response
 
         try {
             const res = await fetch("/api/chat", {
@@ -415,7 +437,10 @@
                                 aiBox.textContent = ""; // Clear loading indicator
                                 hasStarted = true;
                             }
-                            aiBox.textContent += delta;
+                            
+                            fullResponse += delta;
+                            // Parse the accumulated markdown and update innerHTML
+                            aiBox.innerHTML = marked.parse(fullResponse);
                             chat.scrollTop = chat.scrollHeight;
                         }
                     } catch (e) {}
@@ -423,10 +448,10 @@
             }
         } catch (error) {
             console.error(error);
-            if (aiBox.textContent === "") {
+            if (!hasStarted) {
                 aiBox.textContent = "Error: Could not connect to the AI server.";
             } else {
-                aiBox.textContent += "\n\n[Connection interrupted]";
+                aiBox.innerHTML += "<br><br><em>[Connection interrupted]</em>";
             }
         } finally {
             sendBtn.disabled = false;
