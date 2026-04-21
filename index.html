@@ -1,70 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Scratch Buddy</title>
-
+<title>AI Builder</title>
 <style>
-body {
-    margin: 0;
-    font-family: Arial;
-    background: #f5f5f5;
+body { font-family: Arial; background:#0f0f0f; color:white; margin:0; }
+header { padding:10px; background:#222; display:flex; gap:10px; }
+select, button, textarea {
+    padding:8px;
+    font-size:14px;
 }
-header {
-    padding: 12px;
-    background: #4D97FF;
-    color: white;
-    font-weight: bold;
-}
-#chat {
-    height: calc(100vh - 120px);
-    overflow-y: auto;
-    padding: 10px;
-}
-.msg {
-    padding: 10px;
-    margin: 8px 0;
-    border-radius: 10px;
-    max-width: 80%;
-}
-.user { background: #dbeafe; margin-left: auto; }
-.bot { background: #eee; margin-right: auto; white-space: pre-wrap; }
-#inputBox {
-    display: flex;
-    padding: 10px;
-    gap: 10px;
-}
-textarea {
-    flex: 1;
-    padding: 10px;
-}
-button {
-    padding: 10px 15px;
-    background: #4D97FF;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
+#chat { padding:10px; height:80vh; overflow:auto; }
+.msg { margin:10px 0; padding:10px; border-radius:8px; }
+.user { background:#1e3a8a; }
+.ai { background:#333; white-space:pre-wrap; }
+textarea { width:100%; height:60px; }
 </style>
 </head>
 
 <body>
 
-<header>Scratch Buddy (Streaming Fixed)</header>
+<header>
+    <select id="mode">
+        <option value="code">Code</option>
+        <option value="website">Website</option>
+        <option value="scratch">Scratch</option>
+        <option value="game">Game</option>
+    </select>
+    <button onclick="send()">Generate</button>
+</header>
 
 <div id="chat"></div>
 
-<div id="inputBox">
-    <textarea id="input" placeholder="Type here..."></textarea>
-    <button onclick="send()">Send</button>
-</div>
+<textarea id="input" placeholder="Type your idea..."></textarea>
 
 <script>
 const chat = document.getElementById("chat");
-const input = document.getElementById("input");
 
-function addMsg(text, cls) {
+function add(text, cls) {
     const div = document.createElement("div");
     div.className = "msg " + cls;
     div.textContent = text;
@@ -74,26 +46,22 @@ function addMsg(text, cls) {
 }
 
 async function send() {
-    const text = input.value.trim();
-    if (!text) return;
+    const input = document.getElementById("input").value;
+    const mode = document.getElementById("mode").value;
 
-    addMsg(text, "user");
-    input.value = "";
+    if (!input) return;
 
-    const botMsg = addMsg("", "bot");
+    add(input, "user");
+    document.getElementById("input").value = "";
+
+    const aiBox = add("", "ai");
 
     const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            model: "z-ai/glm4.7",
-            messages: [
-                {
-                    role: "system",
-                    content: "You are Scratch Buddy. Return ONLY Scratch block instructions."
-                },
-                { role: "user", content: text }
-            ]
+            mode,
+            messages: [{ role: "user", content: input }]
         })
     });
 
@@ -112,8 +80,6 @@ async function send() {
         buffer = lines.pop();
 
         for (let line of lines) {
-            line = line.trim();
-
             if (!line.startsWith("data:")) continue;
 
             const jsonStr = line.replace("data: ", "");
@@ -122,11 +88,10 @@ async function send() {
 
             try {
                 const data = JSON.parse(jsonStr);
+                const delta = data.choices?.[0]?.delta?.content;
 
-                const delta = data.choices?.[0]?.delta;
-
-                if (delta?.content) {
-                    botMsg.textContent += delta.content;
+                if (delta) {
+                    aiBox.textContent += delta;
                     chat.scrollTop = chat.scrollHeight;
                 }
             } catch (e) {}
