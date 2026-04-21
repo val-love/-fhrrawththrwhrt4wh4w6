@@ -357,6 +357,365 @@
 
     <div id="toast-container"></div>
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch Buddy - AI Coding Assistant</title>
+    <style>
+        :root {
+            --primary-color: #4D97FF; /* Scratch Blue */
+            --accent-color: #FFAB1A; /* Scratch Orange */
+            --bg-color: #F9F9F9;
+            --chat-bg: #FFFFFF;
+            --text-color: #333333;
+            --user-msg-bg: #E3F2FD;
+            --ai-msg-bg: #F1F1F1;
+            --thinking-color: #909090;
+            --code-bg: #2D2D2D;
+            --code-text: #F8F8F2;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--chat-bg);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: var(--shadow);
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary-color);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background-color: var(--accent-color);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #2e7d32;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        /* Chat Area */
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .message-label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 4px;
+            margin-left: 4px;
+        }
+
+        .bubble {
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            line-height: 1.5;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .user .bubble {
+            background-color: var(--user-msg-bg);
+            color: #0d47a1;
+            border-bottom-right-radius: 2px;
+        }
+
+        .ai .bubble {
+            background-color: var(--ai-msg-bg);
+            color: var(--text-color);
+            border-bottom-left-radius: 2px;
+            width: 100%;
+        }
+
+        /* Thinking Section */
+        .thinking-section {
+            font-size: 0.9rem;
+            color: var(--thinking-color);
+            background-color: #fafafa;
+            border-left: 3px solid var(--thinking-color);
+            padding: 0.5rem 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            font-style: italic;
+            display: none; /* Hidden by default until content exists */
+        }
+        
+        .thinking-section.active {
+            display: block;
+        }
+
+        /* Code Blocks */
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            color: #aaa;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Input Area */
+        #input-area {
+            background-color: var(--chat-bg);
+            padding: 1.5rem;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        textarea {
+            flex: 1;
+            padding: 0.8rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            resize: none;
+            height: 50px;
+            max-height: 150px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--primary-color);
+        }
+
+        button#send-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0 1.5rem;
+            height: 50px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button#send-btn:hover {
+            background-color: #3b82e6;
+        }
+
+        button#send-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Toast Notification */
+        #toast-container {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Loading Indicator */
+        .typing-indicator {
+            display: inline-flex;
+            gap: 4px;
+        }
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #888;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 600px) {
+            .message { max-width: 90%; }
+            #input-area { padding: 1rem; }
+            button#send-btn { padding: 0 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <div class="logo-icon">S</div>
+            <span>Scratch Buddy</span>
+        </div>
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            <span>NVIDIA NIM Connected</span>
+        </div>
+    </header>
+
+    <main id="chat-container">
+        <!-- Welcome Message -->
+        <div class="message ai">
+            <div class="message-label">Scratch Buddy</div>
+            <div class="bubble">
+                Hello! I'm Scratch Buddy. I can help you generate Scratch 3.0 code blocks. Just tell me what you want to make (e.g., "Make the cat bounce when I press space") and I'll generate the blocks for you to copy!
+            </div>
+        </div>
+    </main>
+
+    <div id="input-area">
+        <textarea id="user-input" placeholder="Describe your Scratch project here..." rows="1"></textarea>
+        <button id="send-btn">
+            <span>Generate</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+    </div>
+
+    <div id="toast-container"></div>
+
 <script>
     // --- Configuration ---
     const BASE_URL = "/api";
@@ -489,5 +848,7 @@
             .replace(/\n/g, "<br>");
     }
 </script>
+</body>
+</html>
 </body>
 </html>
