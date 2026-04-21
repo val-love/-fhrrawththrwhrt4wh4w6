@@ -16,9 +16,9 @@ body {
 }
 
 header {
-    padding: 12px;
     background: #4D97FF;
     color: white;
+    padding: 12px;
     font-weight: bold;
 }
 
@@ -73,7 +73,7 @@ button {
 
 <body>
 
-<header>Scratch Buddy (Streaming)</header>
+<header>Scratch Buddy (Streaming Fixed)</header>
 
 <div id="chat"></div>
 
@@ -106,14 +106,16 @@ async function send() {
 
     const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json"
+        },
         body: JSON.stringify({
             model: "z-ai/glm4.7",
-            stream: true,   // 🔥 IMPORTANT FIX
+            stream: true,
             messages: [
                 {
                     role: "system",
-                    content: "You are Scratch Buddy, a Scratch 3.0 coding assistant. Return simple block-style instructions."
+                    content: "You are Scratch Buddy. Respond ONLY with final Scratch instructions. No reasoning."
                 },
                 {
                     role: "user",
@@ -124,12 +126,13 @@ async function send() {
     });
 
     if (!res.body) {
-        aiBox.textContent = "No stream support from server.";
+        aiBox.textContent = "No stream from server.";
         return;
     }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
+
     let buffer = "";
 
     while (true) {
@@ -138,25 +141,34 @@ async function send() {
 
         buffer += decoder.decode(value, { stream: true });
 
-        // handle SSE chunks
         const lines = buffer.split("\n");
         buffer = lines.pop();
 
         for (let line of lines) {
-            if (!line.trim()) continue;
+            line = line.trim();
+            if (!line.startsWith("data:")) continue;
 
-            // NVIDIA/OpenAI style streaming
-            if (line.startsWith("data:")) {
-                const jsonStr = line.replace("data:", "").trim();
+            const jsonStr = line.replace("data:", "").trim();
 
-                if (jsonStr === "[DONE]") return;
+            if (jsonStr === "[DONE]") return;
 
-                try {
-                    const json = JSON.parse(jsonStr);
-                    const token = json.choices?.[0]?.delta?.content || "";
+            try {
+                const json = JSON.parse(jsonStr);
+                const delta = json.choices?.[0]?.delta;
+
+                // 🔥 FIX: read BOTH fields
+                const token =
+                    delta?.content ||
+                    delta?.reasoning_content ||
+                    "";
+
+                if (token) {
                     aiBox.textContent += token;
                     chat.scrollTop = chat.scrollHeight;
-                } catch (e) {}
+                }
+
+            } catch (e) {
+                // ignore bad chunks
             }
         }
     }
