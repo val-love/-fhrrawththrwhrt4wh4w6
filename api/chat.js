@@ -6,29 +6,41 @@ export default async function handler(req, res) {
   try {
     const { messages, model } = req.body;
 
-    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
-        "Content-Type": "application/json",
-        "Accept": "text/event-stream"
-      },
-      body: JSON.stringify({
-        model: model || "z-ai/glm4.7",
-        messages,
-        stream: true   // 🔥 REQUIRED FOR STREAMING
-      })
-    });
+    const response = await fetch(
+      "https://integrate.api.nvidia.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
+          "Content-Type": "application/json",
+          "Accept": "text/event-stream"
+        },
+        body: JSON.stringify({
+          model: model || "z-ai/glm4.7",
+          messages: messages,
+
+          stream: true,
+
+          // 🔥 THIS IS THE FIX (disables reasoning spam)
+          extra_body: {
+            chat_template_kwargs: {
+              enable_thinking: false,
+              clear_thinking: true
+            }
+          }
+        })
+      }
+    );
 
     if (!response.ok) {
-      const errText = await response.text();
+      const err = await response.text();
       return res.status(500).json({
         error: "NVIDIA API error",
-        details: errText
+        details: err
       });
     }
 
-    // 🔥 STREAM RESPONSE DIRECTLY TO CLIENT
+    // 🔥 STREAM RAW RESPONSE
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -42,7 +54,6 @@ export default async function handler(req, res) {
 
       const chunk = decoder.decode(value, { stream: true });
 
-      // forward raw stream to frontend
       res.write(chunk);
     }
 
