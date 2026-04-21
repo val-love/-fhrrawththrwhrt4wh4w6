@@ -4,46 +4,36 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, model } = req.body;
-
     const response = await fetch(
       "https://integrate.api.nvidia.com/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
+          Authorization: `Bearer ${process.env.NVIDIA_API_KEY}`,
           "Content-Type": "application/json",
-          "Accept": "text/event-stream"
         },
         body: JSON.stringify({
-          model: model || "z-ai/glm4.7",
-          messages: messages,
-
+          model: req.body.model || "z-ai/glm4.7",
+          messages: req.body.messages,
+          temperature: 1,
+          top_p: 1,
+          max_tokens: 4096,
           stream: true,
-
-          // 🔥 THIS IS THE FIX (disables reasoning spam)
-          extra_body: {
-            chat_template_kwargs: {
-              enable_thinking: false,
-              clear_thinking: true
-            }
-          }
-        })
+        }),
       }
     );
 
     if (!response.ok) {
       const err = await response.text();
-      return res.status(500).json({
-        error: "NVIDIA API error",
-        details: err
-      });
+      return res.status(500).json({ error: "NVIDIA API error", details: err });
     }
 
-    // 🔥 STREAM RAW RESPONSE
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
+    // Stream back to browser
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    });
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -52,18 +42,12 @@ export default async function handler(req, res) {
       const { value, done } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value, { stream: true });
-
+      const chunk = decoder.decode(value);
       res.write(chunk);
     }
 
     res.end();
-
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      error: "Request failed",
-      message: err.message
-    });
+    res.status(500).json({ error: err.message });
   }
 }
