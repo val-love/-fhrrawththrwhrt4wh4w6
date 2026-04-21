@@ -1,7 +1,18 @@
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ error: "Only POST allowed" });
   }
+
+  const { messages, mode } = req.body;
+
+  const systemPrompts = {
+    code: "You are a senior software engineer. Output ONLY clean, working code. No explanations.",
+    website: "You are a website builder AI. Generate full HTML, CSS, JS websites. No explanations.",
+    scratch: "You are Scratch Buddy. Output ONLY Scratch 3.0 block-style instructions.",
+    game: "You are a game developer. Output complete working game code. No explanations."
+  };
+
+  const system = systemPrompts[mode] || systemPrompts.code;
 
   try {
     const response = await fetch(
@@ -13,22 +24,25 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: req.body.model || "z-ai/glm4.7",
-          messages: req.body.messages,
-          temperature: 1,
+          model: "z-ai/glm4.7",
+          messages: [
+            { role: "system", content: system },
+            ...messages
+          ],
+          temperature: 0.7,
           top_p: 1,
-          max_tokens: 4096,
-          stream: true,
+          max_tokens: 2000,
+          stream: true
         }),
       }
     );
 
     if (!response.ok) {
       const err = await response.text();
-      return res.status(500).json({ error: "NVIDIA API error", details: err });
+      return res.status(500).json({ error: err });
     }
 
-    // Stream back to browser
+    // STREAM RESPONSE
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
@@ -41,9 +55,7 @@ export default async function handler(req, res) {
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
-
-      const chunk = decoder.decode(value);
-      res.write(chunk);
+      res.write(decoder.decode(value));
     }
 
     res.end();
