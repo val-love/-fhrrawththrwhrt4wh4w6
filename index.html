@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Scratch Buddy</title>
 
 <style>
@@ -73,7 +73,7 @@ button {
 
 <body>
 
-<header>Scratch Buddy (Streaming Fixed)</header>
+<header>Scratch Buddy</header>
 
 <div id="chat"></div>
 
@@ -115,7 +115,7 @@ async function send() {
             messages: [
                 {
                     role: "system",
-                    content: "You are Scratch Buddy. Respond ONLY with final Scratch instructions. No reasoning."
+                    content: "You are Scratch Buddy. ONLY return final Scratch instructions. No reasoning, no analysis."
                 },
                 {
                     role: "user",
@@ -126,7 +126,7 @@ async function send() {
     });
 
     if (!res.body) {
-        aiBox.textContent = "No stream from server.";
+        aiBox.textContent = "No stream response.";
         return;
     }
 
@@ -149,18 +149,14 @@ async function send() {
             if (!line.startsWith("data:")) continue;
 
             const jsonStr = line.replace("data:", "").trim();
-
             if (jsonStr === "[DONE]") return;
 
             try {
                 const json = JSON.parse(jsonStr);
                 const delta = json.choices?.[0]?.delta;
 
-                // 🔥 FIX: read BOTH fields
-                const token =
-                    delta?.content ||
-                    delta?.reasoning_content ||
-                    "";
+                // 🔥 ONLY REAL TEXT
+                const token = delta?.content || "";
 
                 if (token) {
                     aiBox.textContent += token;
@@ -168,7 +164,7 @@ async function send() {
                 }
 
             } catch (e) {
-                // ignore bad chunks
+                // ignore broken chunks
             }
         }
     }
