@@ -3,84 +3,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scratch Buddy - AI Coding Assistant</title>
+<title>Scratch Buddy</title>
 
 <style>
-:root {
-    --primary-color: #4D97FF;
-    --accent-color: #FFAB1A;
-    --bg-color: #F9F9F9;
-    --chat-bg: #FFFFFF;
-    --text-color: #333333;
-    --user-msg-bg: #E3F2FD;
-    --ai-msg-bg: #F1F1F1;
-    --border-radius: 12px;
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-}
-
 body {
-    background: var(--bg-color);
-    height: 100vh;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    height: 100vh;
 }
 
 header {
-    background: var(--chat-bg);
     padding: 12px;
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid #ddd;
-}
-
-.logo {
+    background: #4D97FF;
+    color: white;
     font-weight: bold;
-    color: var(--primary-color);
-}
-
-.status {
-    color: green;
-    font-size: 12px;
 }
 
 #chat {
     flex: 1;
     overflow-y: auto;
-    padding: 15px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
 .msg {
-    max-width: 80%;
     padding: 10px;
-    border-radius: var(--border-radius);
+    border-radius: 10px;
+    max-width: 80%;
     white-space: pre-wrap;
 }
 
 .user {
-    background: var(--user-msg-bg);
+    background: #dbeafe;
     align-self: flex-end;
 }
 
 .ai {
-    background: var(--ai-msg-bg);
+    background: #eee;
     align-self: flex-start;
 }
 
-#input {
+#inputBar {
     display: flex;
     padding: 10px;
+    background: white;
     gap: 10px;
-    border-top: 1px solid #ddd;
 }
 
 textarea {
@@ -91,7 +63,7 @@ textarea {
 
 button {
     padding: 10px 15px;
-    background: var(--primary-color);
+    background: #4D97FF;
     color: white;
     border: none;
     cursor: pointer;
@@ -101,29 +73,23 @@ button {
 
 <body>
 
-<header>
-    <div class="logo">Scratch Buddy</div>
-    <div class="status">NVIDIA Ready</div>
-</header>
+<header>Scratch Buddy (Streaming)</header>
 
-<div id="chat">
-    <div class="msg ai">Hello! Ask me to generate Scratch code.</div>
-</div>
+<div id="chat"></div>
 
-<div id="input">
-    <textarea id="text" placeholder="Type here..."></textarea>
+<div id="inputBar">
+    <textarea id="input" placeholder="Type here..."></textarea>
     <button onclick="send()">Send</button>
 </div>
 
 <script>
 const chat = document.getElementById("chat");
-const input = document.getElementById("text");
-const API = "/api/chat";
+const input = document.getElementById("input");
 
-function add(role, text) {
+function addMsg(text, cls) {
     const div = document.createElement("div");
-    div.className = "msg " + role;
-    div.innerText = text;
+    div.className = "msg " + cls;
+    div.textContent = text;
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
     return div;
@@ -133,42 +99,66 @@ async function send() {
     const text = input.value.trim();
     if (!text) return;
 
-    add("user", text);
+    addMsg(text, "user");
     input.value = "";
 
-    const loading = add("ai", "Thinking...");
+    const aiBox = addMsg("", "ai");
 
-    try {
-        const res = await fetch(API, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                model: "z-ai/glm4.7",
-                messages: [
-                    {
-                        role: "system",
-                        content: "You are Scratch Buddy. Output Scratch 3.0 block-style instructions."
-                    },
-                    {
-                        role: "user",
-                        content: text
-                    }
-                ]
-            })
-        });
+    const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            model: "z-ai/glm4.7",
+            stream: true,   // 🔥 IMPORTANT FIX
+            messages: [
+                {
+                    role: "system",
+                    content: "You are Scratch Buddy, a Scratch 3.0 coding assistant. Return simple block-style instructions."
+                },
+                {
+                    role: "user",
+                    content: text
+                }
+            ]
+        })
+    });
 
-        const data = await res.json();
-        const msg = data?.choices?.[0]?.message;
+    if (!res.body) {
+        aiBox.textContent = "No stream support from server.";
+        return;
+    }
 
-        const reply =
-            msg?.content ||
-            msg?.reasoning_content ||
-            "No response from model.";
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
 
-        loading.innerText = reply;
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
 
-    } catch (e) {
-        loading.innerText = "Error: " + e.message;
+        buffer += decoder.decode(value, { stream: true });
+
+        // handle SSE chunks
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
+
+        for (let line of lines) {
+            if (!line.trim()) continue;
+
+            // NVIDIA/OpenAI style streaming
+            if (line.startsWith("data:")) {
+                const jsonStr = line.replace("data:", "").trim();
+
+                if (jsonStr === "[DONE]") return;
+
+                try {
+                    const json = JSON.parse(jsonStr);
+                    const token = json.choices?.[0]?.delta?.content || "";
+                    aiBox.textContent += token;
+                    chat.scrollTop = chat.scrollHeight;
+                } catch (e) {}
+            }
+        }
     }
 }
 </script>
