@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.NVIDIA_API_KEY}`,
+          Authorization: `Bearer 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`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
