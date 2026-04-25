@@ -35,7 +35,7 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "z-ai/glm-5.1",
+          model: "z-ai/glm-4.7",
           messages: [
             { role: "system", content: system },
             ...messages
