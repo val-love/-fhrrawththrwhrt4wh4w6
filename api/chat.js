@@ -35,14 +35,14 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "z-ai/glm-4.7",
+          model: "z-ai/glm-5.1",
           messages: [
             { role: "system", content: system },
             ...messages
           ],
           temperature: 0.7,
           top_p: 1,
-          max_tokens: 200000,
+          max_tokens: 2000000,
           stream: true
         }),
       }
