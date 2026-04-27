@@ -31,11 +31,11 @@ export default async function handler(req, res) {
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer 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`,
+          Authorization: `Bearer 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`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "deepseek-ai/deepseek-v4-pro",
+          model: "z-ai/glm4.7",
           messages: [
             { role: "system", content: system },
             ...messages
