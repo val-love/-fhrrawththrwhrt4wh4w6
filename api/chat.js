@@ -11,27 +11,16 @@ export default async function handler(req, res) {
 
   const { messages = [], mode = "chat" } = req.body;
 
-  // 🧠 System prompts
+  // 🧠 Simple system prompts (all same model now, so just guide behavior)
   const systemPrompts = {
-    code: "You are a senior software engineer. Output ONLY clean, working code. No explanations.",
-    websitee: "You are a website builder AI. Generate full HTML, CSS, JS websites. No explanations.",
-    scratch: "You are Scratch Buddy. Output ONLY Scratch 3.0 block-style instructions.",
-    chat: "You are a helpful assistant. Be short, clear, and useful.",
-    game: "You are a game developer. Output complete working game code. No explanations."
-  };
-
-  // 🤖 Model selection (GLM used for coding modes as requested)
-  const modelMap = {
-    code: "GLM-4.6V-Flash",
-    websitee: "GLM-4.6V-Flash",
-    game: "GLM-4.6V-Flash",
-
-    chat: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
-    scratch: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+    code: "You are a senior software engineer. Output ONLY clean, working code.",
+    websitee: "You are a website builder. Output full HTML, CSS, JS only.",
+    scratch: "You output Scratch 3.0 block-style instructions only.",
+    chat: "You are a helpful assistant. Be short and clear.",
+    game: "You are a game developer. Output full working game code only."
   };
 
   const system = systemPrompts[mode] || systemPrompts.chat;
-  const model = modelMap[mode] || modelMap.chat;
 
   try {
     const response = await fetch("https://api.llm7.io/v1/chat/completions", {
@@ -41,7 +30,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model,
+        model: "GLM-4.6V-Flash",
         messages: [
           { role: "system", content: system },
           ...messages
@@ -56,7 +45,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: err });
     }
 
-    // 📡 Streaming response
+    // 📡 Stream response
     res.writeHead(200, {
       "Content-Type": "text/plain",
       "Cache-Control": "no-cache",
@@ -89,9 +78,7 @@ export default async function handler(req, res) {
         try {
           const json = JSON.parse(data);
           const content = json.choices?.[0]?.delta?.content;
-          if (content) {
-            res.write(content);
-          }
+          if (content) res.write(content);
         } catch (e) {
           // ignore bad chunks
         }
