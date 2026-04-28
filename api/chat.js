@@ -12,8 +12,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Only POST allowed" });
   }
 
-  const { messages, mode } = req.body;
+  const { messages = [], mode = "chat" } = req.body;
 
+  // 🧠 System prompts
   const systemPrompts = {
     code: "You are a senior software engineer. Output ONLY clean, working code. No explanations.",
     websitee: "You are a website builder AI. Generate full HTML, CSS, JS websites. No explanations.",
@@ -22,7 +23,17 @@ export default async function handler(req, res) {
     game: "You are a game developer. Output complete working game code. No explanations."
   };
 
-  const system = systemPrompts[mode] || systemPrompts.code;
+  // 🤖 Model selection
+  const modelMap = {
+    code: "codestral-latest",
+    websitee: "codestral-latest",
+    game: "codestral-latest",
+    chat: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+    scratch: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
+  };
+
+  const system = systemPrompts[mode] || systemPrompts.chat;
+  const model = modelMap[mode] || modelMap.chat;
 
   try {
     const response = await fetch("https://api.llm7.io/v1/chat/completions", {
@@ -32,7 +43,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "fast",
+        model,
         messages: [
           { role: "system", content: system },
           ...messages
@@ -47,7 +58,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: err });
     }
 
-    // STREAM BACK TO CLIENT
+    // 📡 Stream response to client
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
