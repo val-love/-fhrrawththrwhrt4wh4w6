@@ -7,14 +7,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
-    <!-- Marked.js for Markdown Parsing -->
+   
+    <!-- Marked.js + Highlight.js -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- Highlight.js for Syntax Highlighting -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-
-    <style>
+        <style>
         :root {
             --bg-body: #09090b;
             --bg-surface: #18181b;
@@ -302,7 +300,6 @@
     </style>
 </head>
 <body>
-
 <header>
     <div class="brand">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 2a10 10 0 0 1 10 10"></path><path d="M12 12 2.1 12.05"></path></svg>
@@ -321,7 +318,7 @@
 
 <div id="chat">
     <div class="msg ai">
-        Hello! I'm your AI Builder. Select a mode above and describe what you want to build..
+        Hello! I'm your AI Builder. Select a mode above and describe what you want to build.
     </div>
 </div>
 
@@ -335,14 +332,13 @@
 </div>
 
 <script>
-    // Configure Marked.js with Highlight.js
     marked.setOptions({
         highlight: function(code, lang) {
             const language = highlight.getLanguage(lang) ? lang : 'plaintext';
             return highlight.highlight(code, { language }).value;
         },
         langPrefix: 'hljs language-',
-        breaks: true // Convert \n to <br>
+        breaks: true
     });
 
     const chat = document.getElementById("chat");
@@ -352,11 +348,9 @@
     // Auto-resize textarea
     input.addEventListener('input', function() {
         this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-        if(this.value === '') this.style.height = '52px';
+        this.style.height = Math.min(this.scrollHeight, 200) + 'px';
     });
 
-    // Allow sending with Enter key
     input.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -366,12 +360,11 @@
 
     function add(text, cls) {
         const div = document.createElement("div");
-        div.className = "msg " + cls;
+        div.className = `msg ${cls}`;
         
         if (text === "") {
             div.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
         } else {
-            // Parse markdown for initial messages (like the welcome message)
             div.innerHTML = marked.parse(text);
         }
         
@@ -383,29 +376,24 @@
     async function send() {
         const text = input.value.trim();
         const mode = document.getElementById("mode").value;
-
         if (!text) return;
 
-        // UI Updates
         add(text, "user");
         input.value = "";
         input.style.height = "52px";
         sendBtn.disabled = true;
-        
-        // Change icon to loading spinner
         sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>';
 
         const aiBox = add("", "ai");
-        let fullResponse = ""; // Buffer to accumulate the full response
+        let fullResponse = "";
+        let lastRenderTime = 0;
+        const RENDER_INTERVAL = 50; // ms — prevents excessive re-renders
 
         try {
             const res = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    mode,
-                    messages: [{ role: "user", content: text }]
-                })
+                body: JSON.stringify({ mode, messages: [{ role: "user", content: text }] })
             });
 
             if (!res.ok) throw new Error("Network response was not ok");
@@ -413,7 +401,6 @@
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
             let buffer = "";
-            let hasStarted = false;
 
             while (true) {
                 const { value, done } = await reader.read();
@@ -421,38 +408,41 @@
 
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split("\n");
-                buffer = lines.pop();
+                buffer = lines.pop() || "";   // keep incomplete line
 
                 for (let line of lines) {
-                    if (!line.startsWith("data:")) continue;
-                    const jsonStr = line.replace("data: ", "");
-                    if (jsonStr === "[DONE]") return;
+                    line = line.trim();
+                    if (!line) continue;
 
-                    try {
-                        const data = JSON.parse(jsonStr);
-                        const delta = data.choices?.[0]?.delta?.content;
+                    // Strip "data: " prefix if present (SSE format)
+                    if (line.startsWith("data: ")) {
+                        line = line.replace("data: ", "").trim();
+                    }
 
-                        if (delta) {
-                            if (!hasStarted) {
-                                aiBox.textContent = ""; // Clear loading indicator
-                                hasStarted = true;
-                            }
-                            
-                            fullResponse += delta;
-                            // Parse the accumulated markdown and update innerHTML
-                            aiBox.innerHTML = marked.parse(fullResponse);
-                            chat.scrollTop = chat.scrollHeight;
-                        }
-                    } catch (e) {}
+                    if (line === "[DONE]" || line === "") continue;
+
+                    // Treat everything else as raw content (works with plain res.write or SSE)
+                    fullResponse += line;
+
+                    // Throttle rendering for smoother UI (especially with partial markdown)
+                    const now = Date.now();
+                    if (now - lastRenderTime > RENDER_INTERVAL) {
+                        aiBox.innerHTML = marked.parse(fullResponse);
+                        chat.scrollTop = chat.scrollHeight;
+                        lastRenderTime = now;
+                    }
                 }
             }
+
+            // Final render in case last chunk was throttled
+            aiBox.innerHTML = marked.parse(fullResponse);
+            chat.scrollTop = chat.scrollHeight;
+
         } catch (error) {
             console.error(error);
-            if (!hasStarted) {
-                aiBox.textContent = "Error: Could not connect to the AI server.";
-            } else {
-                aiBox.innerHTML += "<br><br><em>[Connection interrupted]</em>";
-            }
+            aiBox.innerHTML = fullResponse 
+                ? marked.parse(fullResponse) + "<br><br><em style='color:#f87171;'>[Connection interrupted]</em>"
+                : "Error: Could not connect to the AI server.";
         } finally {
             sendBtn.disabled = false;
             sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
@@ -460,6 +450,5 @@
         }
     }
 </script>
-
 </body>
 </html>
