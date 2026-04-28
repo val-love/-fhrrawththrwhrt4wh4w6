@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
    
-    <!-- Marked.js + Highlight.js -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-        <style>
+    
+    <style>
         :root {
             --bg-body: #09090b;
             --bg-surface: #18181b;
@@ -29,9 +29,7 @@
             --font-sans: 'Inter', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
         }
-
         * { box-sizing: border-box; outline: none; }
-
         body {
             font-family: var(--font-sans);
             background-color: var(--bg-body);
@@ -41,12 +39,10 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08), transparent 25%),
                 radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.08), transparent 25%);
         }
-
-        /* Header */
         header {
             background-color: rgba(9, 9, 11, 0.8);
             backdrop-filter: blur(12px);
@@ -57,7 +53,6 @@
             justify-content: space-between;
             z-index: 50;
         }
-
         .brand {
             font-size: 1.1rem;
             font-weight: 600;
@@ -67,12 +62,6 @@
             color: var(--text-main);
             letter-spacing: -0.02em;
         }
-
-        .brand svg {
-            color: var(--primary);
-            filter: drop-shadow(0 0 8px var(--primary-glow));
-        }
-
         .controls select {
             appearance: none;
             background-color: var(--bg-surface);
@@ -83,23 +72,7 @@
             font-size: 0.85rem;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 14px;
         }
-
-        .controls select:hover {
-            border-color: var(--text-muted);
-        }
-
-        .controls select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-        }
-
-        /* Chat Area */
         #chat {
             flex: 1;
             padding: 2rem;
@@ -112,7 +85,6 @@
             margin: 0 auto;
             width: 100%;
         }
-
         .msg {
             max-width: 85%;
             padding: 1.25rem 1.5rem;
@@ -122,48 +94,19 @@
             position: relative;
             animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             word-wrap: break-word;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(15px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
         .user {
             align-self: flex-end;
             background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
             color: white;
             border-bottom-right-radius: 4px;
-            box-shadow: 0 8px 20px -5px var(--primary-glow);
-            font-weight: 500;
         }
-
         .ai {
             align-self: flex-start;
             background-color: var(--ai-msg-bg);
-            color: var(--text-main);
-            border-bottom-left-radius: 4px;
             border: 1px solid var(--border-color);
+            border-bottom-left-radius: 4px;
         }
-
-        /* Markdown Styles within AI messages */
-        .ai p { margin: 0 0 1em 0; }
-        .ai p:last-child { margin-bottom: 0; }
-        .ai strong { color: #fff; font-weight: 600; }
-        .ai a { color: var(--primary); text-decoration: none; }
-        .ai a:hover { text-decoration: underline; }
-        
-        .ai code:not(pre code) { 
-            background: rgba(0,0,0,0.4); 
-            padding: 2px 6px; 
-            border-radius: 6px; 
-            font-family: var(--font-mono); 
-            font-size: 0.9em;
-            color: #e2e8f0;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
         .ai pre {
             background: #0d0d10;
             padding: 1rem;
@@ -171,104 +114,7 @@
             overflow-x: auto;
             border: 1px solid var(--border-color);
             margin: 0.5rem 0;
-            position: relative;
         }
-        
-        .ai pre code {
-            background: transparent;
-            padding: 0;
-            border: none;
-            color: inherit; /* Allows highlight.js colors to show */
-            font-family: var(--font-mono);
-        }
-
-        /* Input Area */
-        .input-container {
-            background-color: transparent;
-            padding: 1.5rem 2rem 2rem;
-            display: flex;
-            justify-content: center;
-            position: relative;
-        }
-
-        .input-wrapper {
-            flex: 1;
-            max-width: 900px;
-            position: relative;
-            background-color: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 8px;
-            display: flex;
-            align-items: flex-end;
-            gap: 10px;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .input-wrapper:focus-within {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15), 0 -4px 20px rgba(0,0,0,0.2);
-        }
-
-        textarea {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: var(--text-main);
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 1rem;
-            resize: none;
-            height: 52px;
-            max-height: 200px;
-            font-family: var(--font-sans);
-            line-height: 1.5;
-        }
-
-        textarea::placeholder {
-            color: #52525b;
-        }
-
-        button#send-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 6px;
-            margin-right: 6px;
-        }
-
-        button#send-btn:hover {
-            background-color: var(--primary-hover);
-            transform: translateY(-1px);
-        }
-
-        button#send-btn:active {
-            transform: scale(0.95);
-        }
-
-        button#send-btn:disabled {
-            background-color: var(--bg-surface-hover);
-            color: var(--text-muted);
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
-
-        /* Loading Indicator */
         .typing-indicator {
             display: inline-flex;
             gap: 5px;
@@ -283,19 +129,14 @@
         }
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        
+       
         @keyframes pulse {
             0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
             40% { transform: scale(1); opacity: 1; }
         }
-
         @media (max-width: 768px) {
-            header { padding: 1rem; }
-            #chat { padding: 1rem; gap: 1.5rem; }
-            .input-container { padding: 1rem; }
-            .msg { max-width: 95%; }
-            .brand span { display: none; }
-            .brand svg { display: block; }
+            header, .input-container { padding: 1rem; }
+            #chat { padding: 1rem; }
         }
     </style>
 </head>
@@ -323,9 +164,9 @@
 </div>
 
 <div class="input-container">
-    <div class="input-wrapper">
-        <textarea id="input" placeholder="Describe your project idea..." rows="1"></textarea>
-        <button id="send-btn" onclick="send()" aria-label="Send">
+    <div class="input-wrapper" style="background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 8px; display: flex; align-items: flex-end; gap: 10px; max-width: 900px; margin: 0 auto;">
+        <textarea id="input" placeholder="Describe your project idea..." rows="1" style="width: 100%; background: transparent; border: none; color: var(--text-main); padding: 12px; font-size: 1rem; resize: none; height: 52px; max-height: 200px;"></textarea>
+        <button id="send-btn" onclick="send()" style="background-color: var(--primary); color: white; border: none; width: 40px; height: 40px; border-radius: 10px; cursor: pointer;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
         </button>
     </div>
@@ -345,7 +186,6 @@
     const input = document.getElementById("input");
     const sendBtn = document.getElementById("send-btn");
 
-    // Auto-resize textarea
     input.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 200) + 'px';
@@ -361,13 +201,11 @@
     function add(text, cls) {
         const div = document.createElement("div");
         div.className = `msg ${cls}`;
-        
         if (text === "") {
             div.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
         } else {
             div.innerHTML = marked.parse(text);
         }
-        
         chat.appendChild(div);
         chat.scrollTop = chat.scrollHeight;
         return div;
@@ -386,17 +224,18 @@
 
         const aiBox = add("", "ai");
         let fullResponse = "";
-        let lastRenderTime = 0;
-        const RENDER_INTERVAL = 50; // ms — prevents excessive re-renders
 
         try {
             const res = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ mode, messages: [{ role: "user", content: text }] })
+                body: JSON.stringify({
+                    mode,
+                    messages: [{ role: "user", content: text }]
+                })
             });
 
-            if (!res.ok) throw new Error("Network response was not ok");
+            if (!res.ok) throw new Error("Network error");
 
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
@@ -408,41 +247,34 @@
 
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split("\n");
-                buffer = lines.pop() || "";   // keep incomplete line
+                buffer = lines.pop() || "";
 
                 for (let line of lines) {
                     line = line.trim();
                     if (!line) continue;
 
-                    // Strip "data: " prefix if present (SSE format)
+                    // Handle both plain text and SSE format
                     if (line.startsWith("data: ")) {
                         line = line.replace("data: ", "").trim();
                     }
-
                     if (line === "[DONE]" || line === "") continue;
 
-                    // Treat everything else as raw content (works with plain res.write or SSE)
                     fullResponse += line;
 
-                    // Throttle rendering for smoother UI (especially with partial markdown)
-                    const now = Date.now();
-                    if (now - lastRenderTime > RENDER_INTERVAL) {
-                        aiBox.innerHTML = marked.parse(fullResponse);
-                        chat.scrollTop = chat.scrollHeight;
-                        lastRenderTime = now;
-                    }
+                    // Show raw text during streaming (fast + no flicker)
+                    aiBox.textContent = fullResponse;
+                    chat.scrollTop = chat.scrollHeight;
                 }
             }
 
-            // Final render in case last chunk was throttled
+            // Final render: Apply beautiful Markdown + syntax highlighting once
             aiBox.innerHTML = marked.parse(fullResponse);
-            chat.scrollTop = chat.scrollHeight;
 
         } catch (error) {
             console.error(error);
             aiBox.innerHTML = fullResponse 
-                ? marked.parse(fullResponse) + "<br><br><em style='color:#f87171;'>[Connection interrupted]</em>"
-                : "Error: Could not connect to the AI server.";
+                ? marked.parse(fullResponse) + "<br><br><em style='color:#f87171;'>[Stream interrupted]</em>"
+                : "<em style='color:#f87171;'>Error: Could not connect to AI server.</em>";
         } finally {
             sendBtn.disabled = false;
             sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
