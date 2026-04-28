@@ -1,10 +1,9 @@
 export default async function handler(req, res) {
-  // 🌐 CORS HEADERS (IMPORTANT)
+  // 🌐 CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  // Handle preflight request
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -26,34 +25,29 @@ export default async function handler(req, res) {
   const system = systemPrompts[mode] || systemPrompts.code;
 
   try {
-    const response = await fetch(
-      "https://integrate.api.nvidia.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer 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`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "z-ai/glm4.7",
-          messages: [
-            { role: "system", content: system },
-            ...messages
-          ],
-          temperature: 0.7,
-          top_p: 1,
-          max_tokens: 100000,
-          stream: true
-        }),
-      }
-    );
+    const response = await fetch("https://api.llm7.io/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer XLT8sSZr9d4sSTCMXnSG0F0FiXiYAXaNYg+tjwcT0NPLKOWk0Gv3nlNAjqoIh31zUoHus9zPUnbojNOFHDqvZwc/NioggI6tRNPgw+tfj7rEM2MReL5WM3HS7PiNrE/2oog=", // replace if you get a real key
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "fast",
+        messages: [
+          { role: "system", content: system },
+          ...messages
+        ],
+        temperature: 0.7,
+        stream: true
+      }),
+    });
 
     if (!response.ok) {
       const err = await response.text();
       return res.status(500).json({ error: err });
     }
 
-    // STREAM RESPONSE
+    // STREAM BACK TO CLIENT
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
@@ -70,6 +64,7 @@ export default async function handler(req, res) {
     }
 
     res.end();
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
