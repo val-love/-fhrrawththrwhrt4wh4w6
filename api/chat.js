@@ -4,10 +4,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
+  if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Only POST allowed" });
   }
@@ -19,15 +16,16 @@ export default async function handler(req, res) {
     code: "You are a senior software engineer. Output ONLY clean, working code. No explanations.",
     websitee: "You are a website builder AI. Generate full HTML, CSS, JS websites. No explanations.",
     scratch: "You are Scratch Buddy. Output ONLY Scratch 3.0 block-style instructions.",
-    chat: "You are a helpful chat assistant. Be friendly, short, and clear. Do not output code unless asked.",
+    chat: "You are a helpful assistant. Be short, clear, and useful.",
     game: "You are a game developer. Output complete working game code. No explanations."
   };
 
-  // 🤖 Model selection
+  // 🤖 Model selection (GLM used for coding modes as requested)
   const modelMap = {
-    code: "codestral-latest",
-    websitee: "codestral-latest",
-    game: "codestral-latest",
+    code: "GLM-4.6V-Flash",
+    websitee: "GLM-4.6V-Flash",
+    game: "GLM-4.6V-Flash",
+
     chat: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
     scratch: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
   };
@@ -39,7 +37,7 @@ export default async function handler(req, res) {
     const response = await fetch("https://api.llm7.io/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": "Bearer XLT8sSZr9d4sSTCMXnSG0F0FiXiYAXaNYg+tjwcT0NPLKOWk0Gv3nlNAjqoIh31zUoHus9zPUnbojNOFHDqvZwc/NioggI6tRNPgw+tfj7rEM2MReL5WM3HS7PiNrE/2oog=", // replace if you get a real key
+        "Authorization": "Bearer unused",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -58,9 +56,9 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: err });
     }
 
-    // 📡 Stream response to client
+    // 📡 Streaming response
     res.writeHead(200, {
-      "Content-Type": "text/event-stream",
+      "Content-Type": "text/plain",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
     });
@@ -68,10 +66,36 @@ export default async function handler(req, res) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
 
+    let buffer = "";
+
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
-      res.write(decoder.decode(value));
+
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+
+        const data = line.replace("data: ", "").trim();
+        if (data === "[DONE]") {
+          res.end();
+          return;
+        }
+
+        try {
+          const json = JSON.parse(data);
+          const content = json.choices?.[0]?.delta?.content;
+          if (content) {
+            res.write(content);
+          }
+        } catch (e) {
+          // ignore bad chunks
+        }
+      }
     }
 
     res.end();
