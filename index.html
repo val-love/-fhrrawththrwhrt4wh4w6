@@ -7,11 +7,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-   
+    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    
+
     <style>
         :root {
             --bg-body: #09090b;
@@ -23,15 +23,10 @@
             --text-main: #f4f4f5;
             --text-muted: #a1a1aa;
             --border-color: #27272a;
-            --user-msg-bg: #6366f1;
-            --ai-msg-bg: #18181b;
-            --input-bg: #27272a;
-            --font-sans: 'Inter', sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
         }
-        * { box-sizing: border-box; outline: none; }
+        * { box-sizing: border-box; }
         body {
-            font-family: var(--font-sans);
+            font-family: 'Inter', sans-serif;
             background-color: var(--bg-body);
             color: var(--text-main);
             margin: 0;
@@ -39,19 +34,15 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            background-image:
-                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.08), transparent 25%);
         }
         header {
-            background-color: rgba(9, 9, 11, 0.8);
+            background-color: rgba(9, 9, 11, 0.9);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border-color);
             padding: 1rem 2rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            z-index: 50;
         }
         .brand {
             font-size: 1.1rem;
@@ -59,19 +50,6 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            color: var(--text-main);
-            letter-spacing: -0.02em;
-        }
-        .controls select {
-            appearance: none;
-            background-color: var(--bg-surface);
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: 0.6rem 2.5rem 0.6rem 1rem;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
         }
         #chat {
             flex: 1;
@@ -80,7 +58,6 @@
             display: flex;
             flex-direction: column;
             gap: 2rem;
-            scroll-behavior: smooth;
             max-width: 900px;
             margin: 0 auto;
             width: 100%;
@@ -91,19 +68,16 @@
             border-radius: 16px;
             line-height: 1.6;
             font-size: 0.95rem;
-            position: relative;
-            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            word-wrap: break-word;
         }
         .user {
             align-self: flex-end;
-            background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+            background: linear-gradient(135deg, var(--primary), #4f46e5);
             color: white;
             border-bottom-right-radius: 4px;
         }
         .ai {
             align-self: flex-start;
-            background-color: var(--ai-msg-bg);
+            background-color: var(--bg-surface);
             border: 1px solid var(--border-color);
             border-bottom-left-radius: 4px;
         }
@@ -113,37 +87,69 @@
             border-radius: 8px;
             overflow-x: auto;
             border: 1px solid var(--border-color);
-            margin: 0.5rem 0;
         }
         .typing-indicator {
             display: inline-flex;
             gap: 5px;
-            padding: 4px 0;
         }
         .typing-dot {
-            width: 6px;
-            height: 6px;
+            width: 6px; height: 6px;
             background: var(--text-muted);
             border-radius: 50%;
             animation: pulse 1.4s infinite ease-in-out both;
         }
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-       
+
         @keyframes pulse {
             0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
             40% { transform: scale(1); opacity: 1; }
         }
-        @media (max-width: 768px) {
-            header, .input-container { padding: 1rem; }
-            #chat { padding: 1rem; }
+
+        .input-container {
+            padding: 1.5rem 2rem 2rem;
+            background: transparent;
+        }
+        .input-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 8px;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            padding: 12px;
+            font-size: 1rem;
+            resize: none;
+            max-height: 200px;
+            height: 52px;
+        }
+        button#send-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 <header>
     <div class="brand">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 2a10 10 0 0 1 10 10"></path><path d="M12 12 2.1 12.05"></path></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
+            <path d="M12 2a10 10 0 0 1 10 10"></path>
+        </svg>
         <span>AI Builder</span>
     </div>
     <div class="controls">
@@ -158,27 +164,27 @@
 </header>
 
 <div id="chat">
-    <div class="msg ai">
-        Hello! I'm your AI Builder. Select a mode above and describe what you want to build.
-    </div>
+    <div class="msg ai">Hello! I'm your AI Builder. Select a mode and tell me what you want to build.</div>
 </div>
 
 <div class="input-container">
-    <div class="input-wrapper" style="background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 8px; display: flex; align-items: flex-end; gap: 10px; max-width: 900px; margin: 0 auto;">
-        <textarea id="input" placeholder="Describe your project idea..." rows="1" style="width: 100%; background: transparent; border: none; color: var(--text-main); padding: 12px; font-size: 1rem; resize: none; height: 52px; max-height: 200px;"></textarea>
-        <button id="send-btn" onclick="send()" style="background-color: var(--primary); color: white; border: none; width: 40px; height: 40px; border-radius: 10px; cursor: pointer;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+    <div class="input-wrapper">
+        <textarea id="input" placeholder="Describe your project idea..." rows="1"></textarea>
+        <button id="send-btn" onclick="send()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
         </button>
     </div>
 </div>
 
 <script>
     marked.setOptions({
-        highlight: function(code, lang) {
+        highlight: (code, lang) => {
             const language = highlight.getLanguage(lang) ? lang : 'plaintext';
             return highlight.highlight(code, { language }).value;
         },
-        langPrefix: 'hljs language-',
         breaks: true
     });
 
@@ -186,9 +192,10 @@
     const input = document.getElementById("input");
     const sendBtn = document.getElementById("send-btn");
 
-    input.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+    // Auto resize textarea
+    input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 200) + 'px';
     });
 
     input.addEventListener("keydown", (e) => {
@@ -198,13 +205,13 @@
         }
     });
 
-    function add(text, cls) {
+    function addMessage(content, role) {
         const div = document.createElement("div");
-        div.className = `msg ${cls}`;
-        if (text === "") {
-            div.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+        div.className = `msg ${role}`;
+        if (content === "") {
+            div.innerHTML = `<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
         } else {
-            div.innerHTML = marked.parse(text);
+            div.innerHTML = marked.parse(content);
         }
         chat.appendChild(div);
         chat.scrollTop = chat.scrollHeight;
@@ -216,29 +223,27 @@
         const mode = document.getElementById("mode").value;
         if (!text) return;
 
-        add(text, "user");
+        addMessage(text, "user");
         input.value = "";
         input.style.height = "52px";
         sendBtn.disabled = true;
-        sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>';
+        sendBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>`;
 
-        const aiBox = add("", "ai");
+        const aiBox = addMessage("", "ai");
         let fullResponse = "";
 
         try {
             const res = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    mode,
-                    messages: [{ role: "user", content: text }]
-                })
+                body: JSON.stringify({ mode, messages: [{ role: "user", content: text }] })
             });
 
-            if (!res.ok) throw new Error("Network error");
+            if (!res.ok) throw new Error("Server error");
 
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
+
             let buffer = "";
 
             while (true) {
@@ -253,7 +258,7 @@
                     line = line.trim();
                     if (!line) continue;
 
-                    // Handle both plain text and SSE format
+                    // Handle both raw text and SSE "data: " format
                     if (line.startsWith("data: ")) {
                         line = line.replace("data: ", "").trim();
                     }
@@ -261,23 +266,23 @@
 
                     fullResponse += line;
 
-                    // Show raw text during streaming (fast + no flicker)
+                    // Show raw text while streaming (smooth & fast)
                     aiBox.textContent = fullResponse;
                     chat.scrollTop = chat.scrollHeight;
                 }
             }
 
-            // Final render: Apply beautiful Markdown + syntax highlighting once
+            // Final render with beautiful markdown + syntax highlighting
             aiBox.innerHTML = marked.parse(fullResponse);
 
-        } catch (error) {
-            console.error(error);
+        } catch (err) {
+            console.error(err);
             aiBox.innerHTML = fullResponse 
-                ? marked.parse(fullResponse) + "<br><br><em style='color:#f87171;'>[Stream interrupted]</em>"
-                : "<em style='color:#f87171;'>Error: Could not connect to AI server.</em>";
+                ? marked.parse(fullResponse) + `<br><br><em style="color:#f87171;">[Connection interrupted]</em>`
+                : `<em style="color:#f87171;">Error: Could not connect to AI.</em>`;
         } finally {
             sendBtn.disabled = false;
-            sendBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
+            sendBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
             input.focus();
         }
     }
